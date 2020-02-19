@@ -1,10 +1,12 @@
+# frozen_string_literal: true
+
 require 'test_helper'
 require 'pathname'
 
 class ActiveStorageMock
   attr_reader :filename, :download
 
-  def initialize(filename)
+  def initialize(filename = 'foo.txt')
     @filename = filename
     @download = 'content of file'
   end
@@ -17,7 +19,7 @@ class ActiveStorage::SendZipTest < Minitest::Test
 
   def test_it_should_save_one_active_support
     files = [
-      ActiveStorageMock.new('foo.txt')
+      ActiveStorageMock.new
     ]
 
     assert_produce_files files
@@ -25,7 +27,7 @@ class ActiveStorage::SendZipTest < Minitest::Test
 
   def test_it_should_save_two_active_support
     files = [
-      ActiveStorageMock.new('foo.txt'),
+      ActiveStorageMock.new,
       ActiveStorageMock.new('bar.txt')
     ]
 
@@ -34,8 +36,8 @@ class ActiveStorage::SendZipTest < Minitest::Test
 
   def test_it_should_save_two_active_support
     files = [
-      ActiveStorageMock.new('foo.txt'),
-      ActiveStorageMock.new('foo.txt')
+      ActiveStorageMock.new,
+      ActiveStorageMock.new
     ]
 
     assert_produce_files files, count: 2
@@ -44,14 +46,17 @@ class ActiveStorage::SendZipTest < Minitest::Test
   def test_it_should_save_files_in_differents_folders
     files = {
       'folder A' => [
-        ActiveStorageMock.new('foo.txt'),
-        ActiveStorageMock.new('foo.txt')
+        ActiveStorageMock.new,
+        ActiveStorageMock.new,
+        'folder A1' => [
+          ActiveStorageMock.new
+        ]
       ],
       'folder B' => [
         ActiveStorageMock.new('bar.txt')
       ]
     }
-    assert_produce_nested_files files, folder_count: 2, files_count: 3
+    assert_produce_nested_files files, folder_count: 3, files_count: 4
   end
 
   def test_it_should_raise_an_exception
@@ -63,13 +68,13 @@ class ActiveStorage::SendZipTest < Minitest::Test
   def test_it_should_save_files_in_differents_folders_with_root_files
     files = {
       'folder A' => [
-        ActiveStorageMock.new('foo.txt'),
-        ActiveStorageMock.new('foo.txt')
+        ActiveStorageMock.new,
+        ActiveStorageMock.new
       ],
       'folder B' => [
         ActiveStorageMock.new('bar.txt')
       ],
-      0 => ActiveStorageMock.new('foo.txt'),
+      0 => ActiveStorageMock.new,
       1 => ActiveStorageMock.new('bar.txt')
     }
     assert_produce_nested_files files, folder_count: 4, files_count: 5
@@ -79,6 +84,7 @@ class ActiveStorage::SendZipTest < Minitest::Test
 
   def assert_produce_nested_files(files, folder_count: 1, files_count: 1)
     temp_folder = ActiveStorage::SendZipHelper.save_files_on_server(files)
+    puts temp_folder.inspect
     temp_folder_glob = File.join temp_folder, '**', '*'
 
     glob = Dir.glob(temp_folder_glob)
